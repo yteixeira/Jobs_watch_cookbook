@@ -1,11 +1,17 @@
 # it-job-watch
 
-A virtual environment was created and provisioned,
-manually at first, using vagrant to ensure the app
-was working properly. Provisioning the file was fairly
-easy to do as all the requirements were provided. I
-synced the app folder so that I could access the files
-from within the virtual environment.
+1. An Ubuntu virtual environment was created and provisioned, manually at first, using vagrant to ensure the app was working properly. Provisioning the file was fairly easy to do as all the requirements were provided. I synced the app folder so that I could access the files from within the virtual environment. After manually provisioning the environment and testing that everything was working fine.
 
-After manually provisioning the environment, I created
-a provision file so that I could automate the process.
+2. The next step was to automate the provision process. This was done by creating a provision file containing all the shell script that was used to manually provision the virtual machine. By using a specific command, vagrant will run the provision script automatically after running the virtual environment. After running the automated provision script and testing that everything was working as expected, the next step was to migrate the whole provision process to a cookbook in Chef.
+
+3. A cookbook was created using the chef generate cookbook command and the vagrant provision file was translated into a recipe. The neccessary tests were applied and executed using the chef exect respec command to test the syntax of the recipe, as well as the kitchen verify command to test the actual provisioning of the virtual environment.
+
+At this stage the kicthen verify test has failed as it could not find the app folder inside the virtual machine. The reason for that being that the folder was being synced to the virtual machine through vagrant and kitchen verify runs the virtual machine solely on chef, therefore, the vagrant file was never being executed and consequently the app folder never being sent to to the virtual environment. To fix this problem the app folder was synced manually to the virtual environment through the recipe and the tests were executed once again. This time the test were successfull so I could conclude that everything would work fine when executed through vagrant and provisioned through chef. The command to sync the app folder was removed from the recipe and the whole program was tested again manually through vagrant. After concluding the everything is working as expected I then moved on to the next step.
+
+4. Two repositories were created in GitHub, one for the vagrant app folder and one for the cookbook. Each repository having two branches; a dev branch and a master branch. Each repository was populated by the respective folders so that it can be accessed by jenkins when making the pipeline.
+
+5. The next step is to create the pipelines in jenkins. Two pipelines were made, one for the app and the other for the infrastructure. the app pipeline consists of three jobs. The first job is to listen to any changes made in the dev branch of the app repository in GitHub. This is done by setting up a web hook in GitHub. Whenever this job detects a change in the app repository it will runs tests to make sure the app will work properly with the new changes. If the test succeeds it will then trigger the second job. The second job is the one that merges the dev branch of the app repository to the master branch. The third job tracks changes made in the master branch of the app repository and then generates an AMI which can then be used to provision a virtual environment in AWS.
+
+The infrastructure pipeline only needs two jobs and they will be linked to the cookbook repository through a web hook. It works in a similar way than the app pipeline, the first job will listen to changes made in the dev branch of the cookbook repository and then run tests. If the tests succeed it will then trigger the the second job which will then merge the dev branch to the master branch.
+
+At this point that was a problem when creating the slave nodes in jenkins. These slave nodes were suposed to be used for the tests of both the app pipeline and the infrastructure pipeline. The app slave node would have python installed so that it could run the application and the infrastructure pipeline would have chef installed so that it could test the whole environment. Since this step could not be complete I could not generate an AMI at the end of the tests, therefore, it was not possible to run an AWS machine with the application as the AMI would be used to provision the AWS machine. 
